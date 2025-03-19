@@ -45,6 +45,34 @@
             event.preventDefault();
             addItem();
         });
+        
+        // Save form data automatically
+        document.querySelectorAll('#inventoryForm input, #inventoryForm select').forEach(input => {
+            input.addEventListener('input', saveFormData);
+        });
+        
+        function saveFormData() {
+            const formData = {
+                serialNumber: document.getElementById('serialNumber').value,
+                itemName: document.getElementById('itemName').value,
+                category: document.getElementById('category').value,
+                status: document.getElementById('status').value,
+                site: document.getElementById('site').value
+            };
+            localStorage.setItem('formData', JSON.stringify(formData));
+        }
+        
+        function loadFormData() {
+            const savedData = JSON.parse(localStorage.getItem('formData'));
+            if (savedData) {
+                document.getElementById('serialNumber').value = savedData.serialNumber || '';
+                document.getElementById('itemName').value = savedData.itemName || '';
+                document.getElementById('category').value = savedData.category || '';
+                document.getElementById('status').value = savedData.status || 'Available';
+                document.getElementById('site').value = savedData.site || 'PS 18';
+            }
+        }
+        
         function addItem() {
             const serialNumber = document.getElementById('serialNumber').value;
             const name = document.getElementById('itemName').value;
@@ -58,6 +86,7 @@
                             <button class='remove-btn' onclick="removeItem(this)">Remove</button></td>`;
             saveData();
             document.getElementById('inventoryForm').reset();
+            localStorage.removeItem('formData');
         }
         function removeItem(button) {
             button.parentElement.parentElement.remove();
@@ -72,6 +101,7 @@
             document.getElementById('site').value = row.cells[4].innerText;
             row.remove();
             saveData();
+            saveFormData();
         }
         function searchItems() {
             const filter = document.getElementById('searchBox').value.toLowerCase();
@@ -86,7 +116,10 @@
         function loadData() {
             document.getElementById('inventoryList').innerHTML = localStorage.getItem('inventory') || "";
         }
-        window.onload = loadData;
+        window.onload = function() {
+            loadData();
+            loadFormData();
+        };
     </script>
 </body>
 </html>
