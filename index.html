@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CASW Inventory Tracker</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
 </head>
 <body>
     <h2>CASW Equipment Inventory</h2>
@@ -27,76 +25,101 @@
         <button type="submit">Add Item</button>
     </form>
     <input type="text" id="searchBox" placeholder="Search..." onkeyup="searchItems()">
+    <button onclick="exportToCSV()">Export CSV</button>
+    <input type="file" id="fileInput" accept=".csv" onchange="importFromCSV()">
     <table>
         <thead>
             <tr>
-                <th>Serial Number</th>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Status</th>
-                <th>Site</th>
+                <th onclick="sortTable(0)">Serial Number</th>
+                <th onclick="sortTable(1)">Name</th>
+                <th onclick="sortTable(2)">Category</th>
+                <th onclick="sortTable(3)">Status</th>
+                <th onclick="sortTable(4)">Site</th>
                 <th>Action</th>
             </tr>
         </thead>
         <tbody id="inventoryList"></tbody>
     </table>
     <script>
-        // Firebase configuration
-        const firebaseConfig = {
-          apiKey: "AIzaSyCseu-dRFd1Ufm0tSGKwSejBF4CObKSokM",
-          authDomain: "casw-inventory.firebaseapp.com",
-          projectId: "casw-inventory",
-          storageBucket: "casw-inventory.firebasestorage.app",
-          messagingSenderId: "310491267724",
-          appId: "1:310491267724:web:504d91cb1af94265d931a9",
-          measurementId: "G-4T78HQ3Y1G"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const inventoryRef = db.collection("inventory");
-
         document.getElementById('inventoryForm').addEventListener('submit', function(event) {
             event.preventDefault();
             addItem();
         });
-
+        
+        // Save form data automatically
+        document.querySelectorAll('#inventoryForm input, #inventoryForm select').forEach(input => {
+            input.addEventListener('input', saveFormData);
+        });
+        
+        function saveFormData() {
+            const formData = {
+                serialNumber: document.getElementById('serialNumber').value,
+                itemName: document.getElementById('itemName').value,
+                category: document.getElementById('category').value,
+                status: document.getElementById('status').value,
+                site: document.getElementById('site').value
+            };
+            localStorage.setItem('formData', JSON.stringify(formData));
+        }
+        
+        function loadFormData() {
+            const savedData = JSON.parse(localStorage.getItem('formData'));
+            if (savedData) {
+                document.getElementById('serialNumber').value = savedData.serialNumber || '';
+                document.getElementById('itemName').value = savedData.itemName || '';
+                document.getElementById('category').value = savedData.category || '';
+                document.getElementById('status').value = savedData.status || 'Available';
+                document.getElementById('site').value = savedData.site || 'PS 18';
+            }
+        }
+        
         function addItem() {
             const serialNumber = document.getElementById('serialNumber').value;
             const name = document.getElementById('itemName').value;
             const category = document.getElementById('category').value;
             const status = document.getElementById('status').value;
             const site = document.getElementById('site').value;
-
-            inventoryRef.add({
-                serialNumber,
-                name,
-                category,
-                status,
-                site
-            }).then(() => {
-                document.getElementById('inventoryForm').reset();
-            });
+            const table = document.getElementById('inventoryList');
+            const row = table.insertRow();
+            row.innerHTML = `<td>${serialNumber}</td><td>${name}</td><td>${category}</td><td>${status}</td><td>${site}</td>
+                            <td><button class='edit-btn' onclick="editItem(this)">Edit</button>
+                            <button class='remove-btn' onclick="removeItem(this)">Remove</button></td>`;
+            saveData();
+            document.getElementById('inventoryForm').reset();
+            localStorage.removeItem('formData');
         }
-
+        function removeItem(button) {
+            button.parentElement.parentElement.remove();
+            saveData();
+        }
+        function editItem(button) {
+            const row = button.parentElement.parentElement;
+            document.getElementById('serialNumber').value = row.cells[0].innerText;
+            document.getElementById('itemName').value = row.cells[1].innerText;
+            document.getElementById('category').value = row.cells[2].innerText;
+            document.getElementById('status').value = row.cells[3].innerText;
+            document.getElementById('site').value = row.cells[4].innerText;
+            row.remove();
+            saveData();
+            saveFormData();
+        }
+        function searchItems() {
+            const filter = document.getElementById('searchBox').value.toLowerCase();
+            const rows = document.getElementById('inventoryList').getElementsByTagName('tr');
+            for (let row of rows) {
+                row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+            }
+        }
+        function saveData() {
+            localStorage.setItem('inventory', document.getElementById('inventoryList').innerHTML);
+        }
         function loadData() {
-            inventoryRef.onSnapshot(snapshot => {
-                document.getElementById('inventoryList').innerHTML = "";
-                snapshot.forEach(doc => {
-                    const item = doc.data();
-                    const row = document.createElement("tr");
-                    row.innerHTML = `<td>${item.serialNumber}</td><td>${item.name}</td><td>${item.category}</td><td>${item.status}</td><td>${item.site}</td>
-                        <td><button onclick="deleteItem('${doc.id}')">Remove</button></td>`;
-                    document.getElementById('inventoryList').appendChild(row);
-                });
-            });
+            document.getElementById('inventoryList').innerHTML = localStorage.getItem('inventory') || "";
         }
-
-        function deleteItem(id) {
-            inventoryRef.doc(id).delete();
-        }
-
-        loadData();
+        window.onload = function() {
+            loadData();
+            loadFormData();
+        };
     </script>
 </body>
 </html>
