@@ -4,18 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CASW Inventory Tracker</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f0f8ff; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background-color: #0073e6; color: white; cursor: pointer; }
-        th:hover { background-color: #005bb5; }
-        input, select, button { padding: 8px; margin: 5px; }
-        button { background-color: #28a745; color: white; border: none; cursor: pointer; }
-        button:hover { background-color: #218838; }
-        .edit-btn { background-color: #ffc107; }
-        .remove-btn { background-color: #dc3545; }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <h2>CASW Equipment Inventory</h2>
@@ -24,7 +13,7 @@
         <input type="text" id="itemName" placeholder="Item Name" required>
         <input type="text" id="category" placeholder="Category" required>
         <select id="status">
-            <option value="Not In Use / Available">Not In Use / Available</option>
+            <option value="Available">Available</option>
             <option value="In Use">In Use</option>
         </select>
         <select id="site">
@@ -32,11 +21,6 @@
             <option value="Bronx River">Bronx River</option>
             <option value="Beacon">Beacon</option>
             <option value="Main Office">Main Office</option>
-            <option value="PS 115">PS 115</option>
-            <option value="Main Office">Main Office</option>
-            <option value="Main Office">Main Office</option>
-            <option value="Main Office">Main Office</option>
-
         </select>
         <button type="submit">Add Item</button>
     </form>
@@ -94,40 +78,6 @@
             const rows = document.getElementById('inventoryList').getElementsByTagName('tr');
             for (let row of rows) {
                 row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
-            }
-        }
-        function sortTable(n) {
-            const table = document.querySelector("table tbody");
-            const rows = Array.from(table.rows);
-            rows.sort((a, b) => a.cells[n].innerText.localeCompare(b.cells[n].innerText));
-            table.append(...rows);
-        }
-        function exportToCSV() {
-            let csvContent = "data:text/csv;charset=utf-8,";
-            document.querySelectorAll("table tr").forEach(row => {
-                let data = Array.from(row.cells).map(cell => cell.innerText).join(",");
-                csvContent += data + "\n";
-            });
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "inventory.csv");
-            document.body.appendChild(link);
-            link.click();
-        }
-        function importFromCSV() {
-            const file = document.getElementById('fileInput').files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const rows = e.target.result.split("\n").map(row => row.split(","));
-                    rows.forEach(row => {
-                        if (row.length === 5) {
-                            addItem(row[0], row[1], row[2], row[3], row[4]);
-                        }
-                    });
-                };
-                reader.readAsText(file);
             }
         }
         function saveData() {

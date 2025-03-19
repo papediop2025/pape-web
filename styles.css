@@ -1,0 +1,46 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background: url('gradient-international-day-education-background_23-2151120677.avif') no-repeat center center fixed;
+    background-size: cover;
+    color: #fff;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: black;
+}
+th {
+    background-color: #0073e6;
+    color: white;
+    cursor: pointer;
+}
+th:hover {
+    background-color: #005bb5;
+}
+input, select, button {
+    padding: 8px;
+    margin: 5px;
+}
+button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+button:hover {
+    background-color: #218838;
+}
+.edit-btn {
+    background-color: #ffc107;
+}
+.remove-btn {
+    background-color: #dc3545;
+}
