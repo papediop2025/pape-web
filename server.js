@@ -8,7 +8,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-const PORT = process.env.PORT || 5020;
+const PORT = process.env.PORT || 5024;
 const MONGO_URI = process.env.MONGO_URI;
 
 if (!MONGO_URI) {
@@ -27,4 +27,8 @@ mongoose.connect(MONGO_URI, {
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
+});
+
+app.get('/', (req, res) => {
+    res.send('✅ CASW Inventory API is Running! Access API routes at /api');
 });
