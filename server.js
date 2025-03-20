@@ -5,10 +5,13 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 
 const app = express();
+app.use('/api/auth', require('./routes/auth'));
 app.use(express.json());
 app.use(cors());
 
-const PORT = process.env.PORT || 5024;
+const User = require('./models/User'); // Import User Model
+
+const PORT = process.env.PORT || 5026;
 const MONGO_URI = process.env.MONGO_URI;
 
 if (!MONGO_URI) {
