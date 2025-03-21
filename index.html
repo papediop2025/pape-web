@@ -1,11 +1,10 @@
-
+<link rel="stylesheet" href="styles.css">
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CASW Inventory Tracker</title>
-    <link rel="stylesheet" href="styles.css">
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         h2 { text-align: center; }
@@ -87,25 +86,75 @@
                     <button class='remove-btn' onclick="removeItem(this)">Remove</button>
                 </td>`;
 
-            saveData();
+                async function addItem() {
+                    const item = {
+                        serialNumber: document.getElementById('serialNumber').value.trim(),
+                        itemName: document.getElementById('itemName').value.trim(),
+                        category: document.getElementById('category').value.trim(),
+                        status: document.getElementById('status').value,
+                        site: document.getElementById('site').value
+                    };
+
+                    if (!item.serialNumber || !item.itemName || !item.category) {
+                        alert("Please fill all required fields.");
+                        return;
+                    }
+
+                    await fetch('https://pape-web.onrender.com/api/inventory', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(item)
+                    });
+
+                    fetchInventory();  // Refresh the table after adding
+                    document.getElementById('inventoryForm').reset();
+                }
+
             document.getElementById('inventoryForm').reset();
         }
 
         function removeItem(button) {
             button.parentElement.parentElement.remove(); // Remove row from table
-            saveData(); // Save updated data to localStorage
+            async function removeItem(button) {
+                const row = button.parentElement.parentElement;
+                const serialNumber = row.cells[0].innerText;  // Get Serial Number
+
+                await fetch(`https://pape-web.onrender.com/api/inventory/${serialNumber}`, {
+                    method: 'DELETE'
+                });
+
+                fetchInventory();  // Refresh table
+            }
+
         }
 
-        function editItem(button) {
+        async function editItem(button) {
             const row = button.parentElement.parentElement;
-            document.getElementById('serialNumber').value = row.cells[0].innerText;
-            document.getElementById('itemName').value = row.cells[1].innerText;
-            document.getElementById('category').value = row.cells[2].innerText;
-            document.getElementById('status').value = row.cells[3].innerText;
-            document.getElementById('site').value = row.cells[4].innerText;
-            row.remove();
-            saveData();
+
+            const item = {
+                serialNumber: row.cells[0].innerText,
+                itemName: row.cells[1].innerText,
+                category: row.cells[2].innerText,
+                status: row.cells[3].innerText,
+                site: row.cells[4].innerText
+            };
+
+            // Fill form with existing data
+            document.getElementById('serialNumber').value = item.serialNumber;
+            document.getElementById('itemName').value = item.itemName;
+            document.getElementById('category').value = item.category;
+            document.getElementById('status').value = item.status;
+            document.getElementById('site').value = item.site;
+
+            await fetch(`https://pape-web.onrender.com/api/inventory/${item.serialNumber}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(item)
+            });
+
+            fetchInventory();  // Refresh table
         }
+
 
         function searchItems() {
             const filter = document.getElementById('searchBox').value.toLowerCase();
@@ -171,6 +220,26 @@
         window.onload = function() {
             loadData();
         };
+
+        function displayInventory(items) {
+            const table = document.getElementById('inventoryList');
+            table.innerHTML = ""; // Clear table before updating
+
+            items.forEach(item => {
+                const row = table.insertRow();
+                row.innerHTML = `
+                    <td>${item.serialNumber}</td>
+                    <td>${item.itemName}</td>
+                    <td>${item.category}</td>
+                    <td>${item.status}</td>
+                    <td>${item.site}</td>
+                    <td>
+                        <button class='edit-btn' onclick="editItem(this)">Edit</button>
+                        <button class='remove-btn' onclick="removeItem(this)">Remove</button>
+                    </td>`;
+            });
+        }
+
     </script>
 
 </body>

@@ -78,3 +78,8 @@ router.post('/login', [
 });
 
 module.exports = router;
+
+router.post('/register', async (req, res) => {
+    console.log("Received Request Body:", req.body); // Debugging Line
+    res.status(200).json({ message: "Check console for request data" });
+});

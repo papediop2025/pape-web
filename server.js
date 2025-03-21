@@ -11,7 +11,7 @@ app.use(cors());
 
 const User = require('./models/User'); // Import User Model
 
-const PORT = process.env.PORT || 5026;
+const PORT = process.env.PORT || 5028;
 const MONGO_URI = process.env.MONGO_URI;
 
 if (!MONGO_URI) {
