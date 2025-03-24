@@ -43,103 +43,141 @@
         <tbody id="inventoryList"></tbody>
     </table>
 
-    <script>
-        let editingIndex = null;
 
-        document.getElementById('inventoryForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            addItem();
-        });
+    
 
-        function addItem() {
-            const item = {
-                serialNumber: document.getElementById('serialNumber').value.trim(),
-                itemName: document.getElementById('itemName').value.trim(),
-                category: document.getElementById('category').value.trim(),
-                status: document.getElementById('status').value,
-                site: document.getElementById('site').value
-            };
-
-            if (!item.serialNumber || !item.itemName || !item.category) {
-                alert("Please fill all required fields.");
-                return;
-            }
-
-            let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
-
-            if (editingIndex !== null) {
-                inventory[editingIndex] = item;
-                editingIndex = null;
-            } else {
-                inventory.push(item);
-            }
-
-            localStorage.setItem('inventory', JSON.stringify(inventory));
-            document.getElementById('inventoryForm').reset();
-            loadData();
-        }
-
-        function removeItem(index) {
-            let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
-            inventory.splice(index, 1);
-            localStorage.setItem('inventory', JSON.stringify(inventory));
-            loadData();
-        }
-
-        function editItem(index) {
-            let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
-            const item = inventory[index];
-
-            document.getElementById('serialNumber').value = item.serialNumber;
-            document.getElementById('itemName').value = item.itemName;
-            document.getElementById('category').value = item.category;
-            document.getElementById('status').value = item.status;
-            document.getElementById('site').value = item.site;
-
-            editingIndex = index;
-        }
-
-        function searchItems() {
-            const filter = document.getElementById('searchBox').value.toLowerCase();
-            const rows = document.getElementById('inventoryList').getElementsByTagName('tr');
-
-            for (let row of rows) {
-                row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
-            }
-        }
-
-        function sortTable(columnIndex) {
-            let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
-            inventory.sort((a, b) => {
-                const aVal = Object.values(a)[columnIndex].toLowerCase();
-                const bVal = Object.values(b)[columnIndex].toLowerCase();
-                return aVal.localeCompare(bVal);
-            });
-            localStorage.setItem('inventory', JSON.stringify(inventory));
-            loadData();
-        }
-
-        function loadData() {
-            const inventory = JSON.parse(localStorage.getItem('inventory')) || [];
-            const table = document.getElementById('inventoryList');
-            table.innerHTML = "";
-
-            inventory.forEach((item, index) => {
-                const row = table.insertRow();
-                row.innerHTML = `
-                    <td>${item.serialNumber}</td>
-                    <td>${item.itemName}</td>
-                    <td>${item.category}</td>
-                    <td>${item.status}</td>
-                    <td>${item.site}</td>
-                    <td>
-                        <button class='edit-btn' onclick="editItem(${index})">Edit</button>
-                        <button class='remove-btn' onclick="removeItem(${index})">Remove</button>
-                    </td>`;
-            });
-        }
-
-        window.onload = loadData;
-    </script>
+    <!-- Firebase + Firestore SDK -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      addDoc,
+      updateDoc,
+      deleteDoc,
+      doc,
+      setDoc
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  
+    const firebaseConfig = {
+      apiKey: "AIzaSyBGjt0PnRsG7lRv4PWfpECAaxdJpfCsoAM",
+      authDomain: "casw-inventory-e2468.firebaseapp.com",
+      projectId: "casw-inventory-e2468",
+      storageBucket: "casw-inventory-e2468.firebasestorage.app",
+      messagingSenderId: "614257871007",
+      appId: "1:614257871007:web:860ef30566c93af173baaa"
+    };
+  
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const inventoryRef = collection(db, "inventory");
+  
+    let editingId = null;
+  
+    document.getElementById('inventoryForm').addEventListener('submit', async function (event) {
+      event.preventDefault();
+      const item = {
+        serialNumber: document.getElementById('serialNumber').value.trim(),
+        itemName: document.getElementById('itemName').value.trim(),
+        category: document.getElementById('category').value.trim(),
+        status: document.getElementById('status').value,
+        site: document.getElementById('site').value
+      };
+  
+      if (!item.serialNumber || !item.itemName || !item.category) {
+        alert("Please fill all required fields.");
+        return;
+      }
+  
+      if (editingId) {
+        const itemDoc = doc(db, "inventory", editingId);
+        await updateDoc(itemDoc, item);
+        editingId = null;
+      } else {
+        await addDoc(inventoryRef, item);
+      }
+  
+      document.getElementById('inventoryForm').reset();
+      loadData();
+    });
+  
+    async function loadData() {
+      const querySnapshot = await getDocs(inventoryRef);
+      const table = document.getElementById('inventoryList');
+      table.innerHTML = "";
+  
+      querySnapshot.forEach((docSnap) => {
+        const item = docSnap.data();
+        const row = table.insertRow();
+        row.innerHTML = `
+          <td>${item.serialNumber}</td>
+          <td>${item.itemName}</td>
+          <td>${item.category}</td>
+          <td>${item.status}</td>
+          <td>${item.site}</td>
+          <td>
+            <button class='edit-btn' onclick="editItem('${docSnap.id}', '${item.serialNumber}', '${item.itemName}', '${item.category}', '${item.status}', '${item.site}')">Edit</button>
+            <button class='remove-btn' onclick="removeItem('${docSnap.id}')">Remove</button>
+          </td>`;
+      });
+    }
+  
+    window.editItem = function (id, serialNumber, itemName, category, status, site) {
+      document.getElementById('serialNumber').value = serialNumber;
+      document.getElementById('itemName').value = itemName;
+      document.getElementById('category').value = category;
+      document.getElementById('status').value = status;
+      document.getElementById('site').value = site;
+      editingId = id;
+    };
+  
+    window.removeItem = async function (id) {
+      await deleteDoc(doc(db, "inventory", id));
+      loadData();
+    };
+  
+    window.searchItems = function () {
+      const filter = document.getElementById('searchBox').value.toLowerCase();
+      const rows = document.getElementById('inventoryList').getElementsByTagName('tr');
+  
+      for (let row of rows) {
+        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+      }
+    };
+  
+    // Optional: implement basic sort (by getting fresh snapshot, sorting, and re-rendering)
+    window.sortTable = async function (columnIndex) {
+      const querySnapshot = await getDocs(inventoryRef);
+      const items = [];
+      querySnapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+  
+      const keys = ["serialNumber", "itemName", "category", "status", "site"];
+      const sortKey = keys[columnIndex];
+  
+      items.sort((a, b) => a[sortKey].localeCompare(b[sortKey]));
+  
+      const table = document.getElementById('inventoryList');
+      table.innerHTML = "";
+  
+      items.forEach(item => {
+        const row = table.insertRow();
+        row.innerHTML = `
+          <td>${item.serialNumber}</td>
+          <td>${item.itemName}</td>
+          <td>${item.category}</td>
+          <td>${item.status}</td>
+          <td>${item.site}</td>
+          <td>
+            <button class='edit-btn' onclick="editItem('${item.id}', '${item.serialNumber}', '${item.itemName}', '${item.category}', '${item.status}', '${item.site}')">Edit</button>
+            <button class='remove-btn' onclick="removeItem('${item.id}')">Remove</button>
+          </td>`;
+      });
+    };
+  
+    // Load data on first load
+    loadData();
+  </script>
+  
 </body>
 </html>
