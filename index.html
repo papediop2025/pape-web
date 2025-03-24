@@ -1,21 +1,10 @@
-<link rel="stylesheet" href="styles.css">
-<!DOCTYPE html>
-<html lang="en">
+\<!DOCTYPE html>
+<html lang="en"> 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CASW Inventory Tracker</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h2 { text-align: center; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #4CAF50; color: white; cursor: pointer; }
-        input, select, button { margin: 5px; padding: 8px; }
-        .edit-btn, .remove-btn { cursor: pointer; margin: 2px; }
-        .edit-btn { background-color: yellow; }
-        .remove-btn { background-color: red; color: white; }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
@@ -55,106 +44,60 @@
     </table>
 
     <script>
+        let editingIndex = null;
+
         document.getElementById('inventoryForm').addEventListener('submit', function(event) {
             event.preventDefault();
             addItem();
         });
 
         function addItem() {
-            const serialNumber = document.getElementById('serialNumber').value.trim();
-            const name = document.getElementById('itemName').value.trim();
-            const category = document.getElementById('category').value.trim();
-            const status = document.getElementById('status').value;
-            const site = document.getElementById('site').value;
+            const item = {
+                serialNumber: document.getElementById('serialNumber').value.trim(),
+                itemName: document.getElementById('itemName').value.trim(),
+                category: document.getElementById('category').value.trim(),
+                status: document.getElementById('status').value,
+                site: document.getElementById('site').value
+            };
 
-            if (!serialNumber || !name || !category) {
+            if (!item.serialNumber || !item.itemName || !item.category) {
                 alert("Please fill all required fields.");
                 return;
             }
 
-            const table = document.getElementById('inventoryList');
-            const row = table.insertRow();
+            let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
 
-            row.innerHTML = `
-                <td>${serialNumber}</td>
-                <td>${name}</td>
-                <td>${category}</td>
-                <td>${status}</td>
-                <td>${site}</td>
-                <td>
-                    <button class='edit-btn' onclick="editItem(this)">Edit</button>
-                    <button class='remove-btn' onclick="removeItem(this)">Remove</button>
-                </td>`;
-
-                async function addItem() {
-                    const item = {
-                        serialNumber: document.getElementById('serialNumber').value.trim(),
-                        itemName: document.getElementById('itemName').value.trim(),
-                        category: document.getElementById('category').value.trim(),
-                        status: document.getElementById('status').value,
-                        site: document.getElementById('site').value
-                    };
-
-                    if (!item.serialNumber || !item.itemName || !item.category) {
-                        alert("Please fill all required fields.");
-                        return;
-                    }
-
-                    await fetch('https://pape-web.onrender.com/api/inventory', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(item)
-                    });
-
-                    fetchInventory();  // Refresh the table after adding
-                    document.getElementById('inventoryForm').reset();
-                }
-
-            document.getElementById('inventoryForm').reset();
-        }
-
-        function removeItem(button) {
-            button.parentElement.parentElement.remove(); // Remove row from table
-            async function removeItem(button) {
-                const row = button.parentElement.parentElement;
-                const serialNumber = row.cells[0].innerText;  // Get Serial Number
-
-                await fetch(`https://pape-web.onrender.com/api/inventory/${serialNumber}`, {
-                    method: 'DELETE'
-                });
-
-                fetchInventory();  // Refresh table
+            if (editingIndex !== null) {
+                inventory[editingIndex] = item;
+                editingIndex = null;
+            } else {
+                inventory.push(item);
             }
 
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+            document.getElementById('inventoryForm').reset();
+            loadData();
         }
 
-        async function editItem(button) {
-            const row = button.parentElement.parentElement;
+        function removeItem(index) {
+            let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+            inventory.splice(index, 1);
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+            loadData();
+        }
 
-            const item = {
-                serialNumber: row.cells[0].innerText,
-                itemName: row.cells[1].innerText,
-                category: row.cells[2].innerText,
-                status: row.cells[3].innerText,
-                site: row.cells[4].innerText
-            };
+        function editItem(index) {
+            let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+            const item = inventory[index];
 
-            // Fill form with existing data
             document.getElementById('serialNumber').value = item.serialNumber;
             document.getElementById('itemName').value = item.itemName;
             document.getElementById('category').value = item.category;
             document.getElementById('status').value = item.status;
             document.getElementById('site').value = item.site;
 
-            await fetch(`https://pape-web.onrender.com/api/inventory/${item.serialNumber}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item)
-            });
-
-            fetchInventory();  // Refresh table
+            editingIndex = index;
         }
-
 
         function searchItems() {
             const filter = document.getElementById('searchBox').value.toLowerCase();
@@ -165,67 +108,23 @@
             }
         }
 
-        function saveData() {
-            const tableRows = document.querySelectorAll("#inventoryList tr");
-            const inventoryData = [];
-
-            tableRows.forEach(row => {
-                const cells = row.getElementsByTagName("td");
-                if (cells.length > 0) {
-                    inventoryData.push({
-                        serialNumber: cells[0].innerText,
-                        itemName: cells[1].innerText,
-                        category: cells[2].innerText,
-                        status: cells[3].innerText,
-                        site: cells[4].innerText
-                    });
-                }
+        function sortTable(columnIndex) {
+            let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+            inventory.sort((a, b) => {
+                const aVal = Object.values(a)[columnIndex].toLowerCase();
+                const bVal = Object.values(b)[columnIndex].toLowerCase();
+                return aVal.localeCompare(bVal);
             });
-
-            localStorage.setItem("inventory", JSON.stringify(inventoryData));
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+            loadData();
         }
 
         function loadData() {
-            const savedInventory = localStorage.getItem("inventory");
-            if (!savedInventory) return;
-
-            const inventoryData = JSON.parse(savedInventory);
+            const inventory = JSON.parse(localStorage.getItem('inventory')) || [];
             const table = document.getElementById('inventoryList');
-            table.innerHTML = ""; // Clear existing table data
-
-            inventoryData.forEach(item => {
-                const row = table.insertRow();
-                row.innerHTML = `
-                    <td>${item.serialNumber}</td>
-                    <td>${item.itemName}</td>
-                    <td>${item.category}</td>
-                    <td>${item.status}</td>
-                    <td>${item.site}</td>
-                    <td>
-                        <button class='edit-btn' onclick="editItem(this)">Edit</button>
-                        <button class='remove-btn' onclick="removeItem(this)">Remove</button>
-                    </td>`;
-            });
-        }
-
-        function sortTable(columnIndex) {
-            const table = document.getElementById('inventoryList');
-            const rows = Array.from(table.rows);
-            const sortedRows = rows.sort((a, b) => a.cells[columnIndex].innerText.localeCompare(b.cells[columnIndex].innerText));
             table.innerHTML = "";
-            sortedRows.forEach(row => table.appendChild(row));
-            saveData();
-        }
 
-        window.onload = function() {
-            loadData();
-        };
-
-        function displayInventory(items) {
-            const table = document.getElementById('inventoryList');
-            table.innerHTML = ""; // Clear table before updating
-
-            items.forEach(item => {
+            inventory.forEach((item, index) => {
                 const row = table.insertRow();
                 row.innerHTML = `
                     <td>${item.serialNumber}</td>
@@ -234,13 +133,13 @@
                     <td>${item.status}</td>
                     <td>${item.site}</td>
                     <td>
-                        <button class='edit-btn' onclick="editItem(this)">Edit</button>
-                        <button class='remove-btn' onclick="removeItem(this)">Remove</button>
+                        <button class='edit-btn' onclick="editItem(${index})">Edit</button>
+                        <button class='remove-btn' onclick="removeItem(${index})">Remove</button>
                     </td>`;
             });
         }
 
+        window.onload = loadData;
     </script>
-
 </body>
 </html>
