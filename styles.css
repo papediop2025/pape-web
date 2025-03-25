@@ -1,0 +1,109 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background: url('gradient-international-day-education-background_23-2151120677.avif') no-repeat center center fixed;
+    background-size: cover;
+    color: #fff;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: black;
+}
+th {
+    background-color: #0073e6;
+    color: white;
+    cursor: pointer;
+}
+th:hover {
+    background-color: #005bb5;
+}
+input, select, button {
+    padding: 8px;
+    margin: 5px;
+}
+button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+button:hover {
+    background-color: #218838;
+}
+.edit-btn {
+    background-color: #ffc107;
+}
+.remove-btn {
+    background-color: #dc3545;
+}
+
+.logout-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    z-index: 999;
+  }
+  
+  .logout-btn:hover {
+    background-color: #c0392b;
+  }
+  
+  .auth-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 30px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 300px;
+    z-index: 10;
+  }
+  
+  .auth-container input {
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  .auth-container button {
+    padding: 10px;
+    font-size: 14px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  
+  .auth-container button:hover {
+    background-color: #2980b9;
+  }
+
+  .auth-logo {
+    width: 150%;
+    max-width: 600px;
+    margin: 0 auto 20px;
+    display: block;
+  }
+  
+  

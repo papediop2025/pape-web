@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en"> 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CASW Inventory Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- 🔓 Logout button in top-right corner -->
+    <button id="logoutBtn" style="display: none;" class="logout-btn">Logout</button>
+    
+    
+    <img src="CASW-website-logo.png" alt="C.A.S.W Logo" class="auth-logo" />
+ 
+
+    
+    <!-- 🔐 Login Form -->
+        <div id="authSection" class="auth-container">
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Password">
+            <button id="loginBtn">Login</button>
+        </div>
+  
+        
+        
+        <!-- ✅ Inventory form: hidden until logged in -->
+        <form id="inventoryForm" style="display: none;">
+            <input type="text" id="searchBox" placeholder="Search..." onkeyup="searchItems()" style="display: none;">
+            <table style="display: none;">
+            <input type="text" id="serialNumber" placeholder="Serial Number" required>
+            <input type="text" id="itemName" placeholder="Item Name" required>
+            <input type="text" id="category" placeholder="Category" required>
+            <select id="status">
+            <option value="Available">Available</option>
+            <option value="In Use">In Use</option>
+            </select>
+            <select id="site">
+            <option value="PS 18">PS 18</option>
+            <option value="Bronx River">Bronx River</option>
+            <option value="Beacon">Beacon</option>
+            <option value="Main Office">Main Office</option>
+            </select>
+            <button type="submit">Add Item</button>
+        </form>
+        
+          
+    
+    
+    <table>
+        <thead>
+            <tr>
+                <th onclick="sortTable(0)">Serial Number</th>
+                <th onclick="sortTable(1)">Name</th>
+                <th onclick="sortTable(2)">Category</th>
+                <th onclick="sortTable(3)">Status</th>
+                <th onclick="sortTable(4)">Site</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="inventoryList"></tbody>
+    </table>
+
+
+    
+
+    <!-- Firebase + Firestore SDK -->
+<script type="module">
+    import {
+        getAuth,
+        onAuthStateChanged,
+        signInWithEmailAndPassword,
+        signOut
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      addDoc,
+      updateDoc,
+      deleteDoc,
+      doc,
+      setDoc
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBGjt0PnRsG7lRv4PWfpECAaxdJpfCsoAM",
+      authDomain: "casw-inventory-e2468.firebaseapp.com",
+      projectId: "casw-inventory-e2468",
+      storageBucket: "casw-inventory-e2468.firebasestorage.app",
+      messagingSenderId: "614257871007",
+      appId: "1:614257871007:web:860ef30566c93af173baaa"
+    };
+  
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const inventoryRef = collection(db, "inventory");
+
+
+    const auth = getAuth(app);
+
+    onAuthStateChanged(auth, user => {
+        if (user) {
+            console.log("🔐 Authenticated as", user.email);
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('inventoryForm').style.display = 'block';
+            document.getElementById('searchBox').style.display = 'block';
+            document.querySelector('table').style.display = 'table';
+            document.getElementById('logoutBtn').style.display = 'inline-block';
+            loadData();
+        } else {
+            console.log("👤 No user signed in.");
+            document.getElementById('authSection').style.display = 'block';
+            document.getElementById('inventoryForm').style.display = 'none';
+            document.getElementById('searchBox').style.display = 'none';
+            document.querySelector('table').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'none';
+        }
+        });
+
+
+
+    // 🔐 Login
+    document.getElementById('loginBtn').addEventListener('click', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            // No alert — just wait for onAuthStateChanged to trigger
+        } catch (error) {
+            console.error("❌ Login error:", error.message);
+            alert("Login failed: " + error.message);
+        }
+        });
+
+
+    
+
+
+    // 🚪 Logout
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await signOut(auth);
+        // No alert — the UI will reset automatically via onAuthStateChanged
+        });
+
+
+
+  
+   
+  
+    let editingId = null;
+  
+    document.getElementById('inventoryForm').addEventListener('submit', async function (event) {
+      event.preventDefault();
+      const item = {
+        serialNumber: document.getElementById('serialNumber').value.trim(),
+        itemName: document.getElementById('itemName').value.trim(),
+        category: document.getElementById('category').value.trim(),
+        status: document.getElementById('status').value,
+        site: document.getElementById('site').value
+      };
+  
+      if (!item.serialNumber || !item.itemName || !item.category) {
+        alert("Please fill all required fields.");
+        return;
+      }
+  
+      if (editingId) {
+        const itemDoc = doc(db, "inventory", editingId);
+        await updateDoc(itemDoc, item);
+        editingId = null;
+      } else {
+        await addDoc(inventoryRef, item);
+      }
+  
+      document.getElementById('inventoryForm').reset();
+      loadData();
+    });
+  
+    async function loadData() {
+      const querySnapshot = await getDocs(inventoryRef);
+      const table = document.getElementById('inventoryList');
+      table.innerHTML = "";
+  
+      querySnapshot.forEach((docSnap) => {
+        const item = docSnap.data();
+        const row = table.insertRow();
+        row.innerHTML = `
+          <td>${item.serialNumber}</td>
+          <td>${item.itemName}</td>
+          <td>${item.category}</td>
+          <td>${item.status}</td>
+          <td>${item.site}</td>
+          <td>
+            <button class='edit-btn' onclick="editItem('${docSnap.id}', '${item.serialNumber}', '${item.itemName}', '${item.category}', '${item.status}', '${item.site}')">Edit</button>
+            <button class='remove-btn' onclick="removeItem('${docSnap.id}')">Remove</button>
+          </td>`;
+      });
+    }
+  
+    window.editItem = function (id, serialNumber, itemName, category, status, site) {
+      document.getElementById('serialNumber').value = serialNumber;
+      document.getElementById('itemName').value = itemName;
+      document.getElementById('category').value = category;
+      document.getElementById('status').value = status;
+      document.getElementById('site').value = site;
+      editingId = id;
+    };
+  
+    window.removeItem = async function (id) {
+      await deleteDoc(doc(db, "inventory", id));
+      loadData();
+    };
+  
+    window.searchItems = function () {
+      const filter = document.getElementById('searchBox').value.toLowerCase();
+      const rows = document.getElementById('inventoryList').getElementsByTagName('tr');
+  
+      for (let row of rows) {
+        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+      }
+    };
+  
+    // Optional: implement basic sort (by getting fresh snapshot, sorting, and re-rendering)
+    window.sortTable = async function (columnIndex) {
+      const querySnapshot = await getDocs(inventoryRef);
+      const items = [];
+      querySnapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+  
+      const keys = ["serialNumber", "itemName", "category", "status", "site"];
+      const sortKey = keys[columnIndex];
+  
+      items.sort((a, b) => a[sortKey].localeCompare(b[sortKey]));
+  
+      const table = document.getElementById('inventoryList');
+      table.innerHTML = "";
+  
+      items.forEach(item => {
+        const row = table.insertRow();
+        row.innerHTML = `
+          <td>${item.serialNumber}</td>
+          <td>${item.itemName}</td>
+          <td>${item.category}</td>
+          <td>${item.status}</td>
+          <td>${item.site}</td>
+          <td>
+            <button class='edit-btn' onclick="editItem('${item.id}', '${item.serialNumber}', '${item.itemName}', '${item.category}', '${item.status}', '${item.site}')">Edit</button>
+            <button class='remove-btn' onclick="removeItem('${item.id}')">Remove</button>
+          </td>`;
+      });
+    };
+  
+    // Load data on first load
+    loadData();
+  </script>
+  
+</body>
+</html>
+
