@@ -8,31 +8,45 @@
 </head>
 <body>
 
-    <h2>CASW Equipment Inventory</h2>
+    <!-- 🔓 Logout button in top-right corner -->
+    <button id="logoutBtn" style="display: none;" class="logout-btn">Logout</button>
     
-    <form id="inventoryForm">
-        <input type="file" id="itemImage" accept="image/*">
-        <input type="text" id="serialNumber" placeholder="Serial Number" required>
-        <input type="text" id="itemName" placeholder="Item Name" required>
-        <input type="text" id="category" placeholder="Category" required>
-        <select id="status">
+    
+    <img src="CASW-website-logo.png" alt="C.A.S.W Logo" class="auth-logo" />
+ 
+
+    
+    <!-- 🔐 Login Form -->
+        <div id="authSection" class="auth-container">
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Password">
+            <button id="loginBtn">Login</button>
+        </div>
+  
+        
+        
+        <!-- ✅ Inventory form: hidden until logged in -->
+        <form id="inventoryForm" style="display: none;">
+            <input type="text" id="searchBox" placeholder="Search..." onkeyup="searchItems()" style="display: none;">
+            <table style="display: none;">
+            <input type="text" id="serialNumber" placeholder="Serial Number" required>
+            <input type="text" id="itemName" placeholder="Item Name" required>
+            <input type="text" id="category" placeholder="Category" required>
+            <select id="status">
             <option value="Available">Available</option>
             <option value="In Use">In Use</option>
-        </select>
-        <select id="site">
+            </select>
+            <select id="site">
             <option value="PS 18">PS 18</option>
             <option value="Bronx River">Bronx River</option>
             <option value="Beacon">Beacon</option>
             <option value="Main Office">Main Office</option>
-        </select>
-        <button type="submit">Add Item</button>
-    </form>
-
-    <img id="imagePreview" src="" style="max-height: 100px; margin-top: 10px; display: none;" />
-
-
-
-    <input type="text" id="searchBox" placeholder="Search..." onkeyup="searchItems()">
+            </select>
+            <button type="submit">Add Item</button>
+        </form>
+        
+          
+    
     
     <table>
         <thead>
@@ -42,7 +56,6 @@
                 <th onclick="sortTable(2)">Category</th>
                 <th onclick="sortTable(3)">Status</th>
                 <th onclick="sortTable(4)">Site</th>
-                <th>Image</th>
                 <th>Action</th>
             </tr>
         </thead>
@@ -54,6 +67,14 @@
 
     <!-- Firebase + Firestore SDK -->
 <script type="module">
+    import {
+        getAuth,
+        onAuthStateChanged,
+        signInWithEmailAndPassword,
+        signOut
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import {
       getFirestore,
@@ -65,15 +86,6 @@
       doc,
       setDoc
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    import {
-        getStorage,
-        ref as storageRef,
-        uploadBytes,
-        getDownloadURL
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
-
-    const storage = getStorage(app);
 
     const firebaseConfig = {
       apiKey: "AIzaSyBGjt0PnRsG7lRv4PWfpECAaxdJpfCsoAM",
@@ -87,63 +99,91 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const inventoryRef = collection(db, "inventory");
+
+
+    const auth = getAuth(app);
+
+    onAuthStateChanged(auth, user => {
+        if (user) {
+            console.log("🔐 Authenticated as", user.email);
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('inventoryForm').style.display = 'block';
+            document.getElementById('searchBox').style.display = 'block';
+            document.querySelector('table').style.display = 'table';
+            document.getElementById('logoutBtn').style.display = 'inline-block';
+            loadData();
+        } else {
+            console.log("👤 No user signed in.");
+            document.getElementById('authSection').style.display = 'block';
+            document.getElementById('inventoryForm').style.display = 'none';
+            document.getElementById('searchBox').style.display = 'none';
+            document.querySelector('table').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'none';
+        }
+        });
+
+
+
+    // 🔐 Login
+    document.getElementById('loginBtn').addEventListener('click', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            // No alert — just wait for onAuthStateChanged to trigger
+        } catch (error) {
+            console.error("❌ Login error:", error.message);
+            alert("Login failed: " + error.message);
+        }
+        });
+
+
+    
+
+
+    // 🚪 Logout
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        await signOut(auth);
+        // No alert — the UI will reset automatically via onAuthStateChanged
+        });
+
+
+
+  
+   
   
     let editingId = null;
   
     document.getElementById('inventoryForm').addEventListener('submit', async function (event) {
-        event.preventDefault();
-
-        const file = document.getElementById('itemImage').files[0];
-        let imageUrl = "";
-
-        if (file) {
-            const filePath = `inventory-images/${Date.now()}-${file.name}`;
-            const imageRef = storageRef(storage, filePath);
-            await uploadBytes(imageRef, file);
-            imageUrl = await getDownloadURL(imageRef);
-        }
-
-        const item = {
-            serialNumber: document.getElementById('serialNumber').value.trim(),
-            itemName: document.getElementById('itemName').value.trim(),
-            category: document.getElementById('category').value.trim(),
-            status: document.getElementById('status').value,
-            site: document.getElementById('site').value,
-            imageUrl: imageUrl // save image URL in Firestore
-        };
-
-        if (!item.serialNumber || !item.itemName || !item.category) {
-            alert("Please fill all required fields.");
-            return;
-        }
-
-        if (editingId) {
-            const itemDoc = doc(db, "inventory", editingId);
-            await updateDoc(itemDoc, item);
-            editingId = null;
-        } else {
-            await addDoc(inventoryRef, item);
-        }
-
-        document.getElementById('inventoryForm').reset();
-        loadData();
-        });
-
+      event.preventDefault();
+      const item = {
+        serialNumber: document.getElementById('serialNumber').value.trim(),
+        itemName: document.getElementById('itemName').value.trim(),
+        category: document.getElementById('category').value.trim(),
+        status: document.getElementById('status').value,
+        site: document.getElementById('site').value
+      };
   
       if (!item.serialNumber || !item.itemName || !item.category) {
         alert("Please fill all required fields.");
         return;
       }
   
-    
+      if (editingId) {
+        const itemDoc = doc(db, "inventory", editingId);
+        await updateDoc(itemDoc, item);
+        editingId = null;
+      } else {
+        await addDoc(inventoryRef, item);
+      }
   
       document.getElementById('inventoryForm').reset();
       loadData();
-    ;
+    });
   
     async function loadData() {
-      
-
       const querySnapshot = await getDocs(inventoryRef);
       const table = document.getElementById('inventoryList');
       table.innerHTML = "";
@@ -157,10 +197,6 @@
           <td>${item.category}</td>
           <td>${item.status}</td>
           <td>${item.site}</td>
-          <td>
-            ${item.imageUrl ? `<img src="${item.imageUrl}" width="50" height="50" style="object-fit:cover; border-radius:6px;" />` : "No Image"}
-          </td>
-
           <td>
             <button class='edit-btn' onclick="editItem('${docSnap.id}', '${item.serialNumber}', '${item.itemName}', '${item.category}', '${item.status}', '${item.site}')">Edit</button>
             <button class='remove-btn' onclick="removeItem('${docSnap.id}')">Remove</button>
@@ -222,20 +258,8 @@
   
     // Load data on first load
     loadData();
-
-    document.getElementById('itemImage').addEventListener('change', function(event) {
-        const file = event.target.files[0];
-        const preview = document.getElementById('imagePreview');
-        if (file) {
-            preview.src = URL.createObjectURL(file);
-            preview.style.display = 'block';
-        } else {
-            preview.src = '';
-            preview.style.display = 'none';
-        }
-        });
-
   </script>
   
 </body>
 </html>
+

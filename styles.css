@@ -44,3 +44,66 @@ button:hover {
 .remove-btn {
     background-color: #dc3545;
 }
+
+.logout-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    z-index: 999;
+  }
+  
+  .logout-btn:hover {
+    background-color: #c0392b;
+  }
+  
+  .auth-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 30px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 300px;
+    z-index: 10;
+  }
+  
+  .auth-container input {
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  .auth-container button {
+    padding: 10px;
+    font-size: 14px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  
+  .auth-container button:hover {
+    background-color: #2980b9;
+  }
+
+  .auth-logo {
+    width: 150%;
+    max-width: 600px;
+    margin: 0 auto 20px;
+    display: block;
+  }
+  
+  
