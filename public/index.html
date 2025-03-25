@@ -12,7 +12,7 @@
     <button id="logoutBtn" style="display: none;" class="logout-btn">Logout</button>
     
     
-    <img src="CASW-website-logo.png" alt="C.A.S.W Logo" class="auth-logo" />
+    <img src="CASW.png" alt="C.A.S.W Logo" class="auth-logo" />
  
 
     
@@ -26,24 +26,35 @@
         
         
         <!-- ✅ Inventory form: hidden until logged in -->
+       <!-- ✅ Inventory Form (Only form inputs & submit button) -->
         <form id="inventoryForm" style="display: none;">
-            <input type="text" id="searchBox" placeholder="Search..." onkeyup="searchItems()" style="display: none;">
-            <table style="display: none;">
+          <div class="form-fields">
             <input type="text" id="serialNumber" placeholder="Serial Number" required>
             <input type="text" id="itemName" placeholder="Item Name" required>
             <input type="text" id="category" placeholder="Category" required>
             <select id="status">
-            <option value="Available">Available</option>
-            <option value="In Use">In Use</option>
+              <option value="Available">Available</option>
+              <option value="In Use">In Use</option>
             </select>
             <select id="site">
-            <option value="PS 18">PS 18</option>
-            <option value="Bronx River">Bronx River</option>
-            <option value="Beacon">Beacon</option>
-            <option value="Main Office">Main Office</option>
+              <option value="PS 18">PS 18</option>
+              <option value="Bronx River">Bronx River</option>
+              <option value="Beacon">Beacon</option>
+              <option value="Main Office">Main Office</option>
             </select>
             <button type="submit">Add Item</button>
+          </div>
         </form>
+
+        <!-- ✅ Search box should also be OUTSIDE the form -->
+        <input type="text" id="searchBox" placeholder="Search..." onkeyup="searchItems()" style="display: none;">
+
+        <!-- ✅ Inventory Table -->
+        <table style="display: none;">
+          <thead>...</thead>
+          <tbody id="inventoryList"></tbody>
+        </table>
+
         
           
     
@@ -170,17 +181,21 @@
         alert("Please fill all required fields.");
         return;
       }
-  
       if (editingId) {
-        const itemDoc = doc(db, "inventory", editingId);
-        await updateDoc(itemDoc, item);
-        editingId = null;
-      } else {
-        await addDoc(inventoryRef, item);
-      }
-  
-      document.getElementById('inventoryForm').reset();
-      loadData();
+          const itemDoc = doc(db, "inventory", editingId);
+          await updateDoc(itemDoc, item);
+          editingId = null;
+        } else {
+          await addDoc(inventoryRef, item);
+        }
+
+        // Clear form AFTER edit/add is done
+        document.getElementById('inventoryForm').reset();
+
+        // Small delay helps prevent UI flicker when editing
+        setTimeout(() => loadData(), 100);
+
+      
     });
   
     async function loadData() {
@@ -198,20 +213,41 @@
           <td>${item.status}</td>
           <td>${item.site}</td>
           <td>
-            <button class='edit-btn' onclick="editItem('${docSnap.id}', '${item.serialNumber}', '${item.itemName}', '${item.category}', '${item.status}', '${item.site}')">Edit</button>
-            <button class='remove-btn' onclick="removeItem('${docSnap.id}')">Remove</button>
+            <button  type="button" class='edit-btn'
+                data-id="${docSnap.id}"
+                data-serial="${item.serialNumber}"
+                data-name="${item.itemName}"
+                data-category="${item.category}"
+                data-status="${item.status}"
+                data-site="${item.site}">
+                Edit
+            </button>
+            <button type="button" class='remove-btn' onclick="removeItem('${docSnap.id}')">Remove</button>
           </td>`;
       });
     }
+
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('edit-btn')) {
+          const btn = e.target;
+          document.getElementById('serialNumber').value = btn.getAttribute('data-serial');
+          document.getElementById('itemName').value = btn.getAttribute('data-name');
+          document.getElementById('category').value = btn.getAttribute('data-category');
+          document.getElementById('status').value = btn.getAttribute('data-status');
+          document.getElementById('site').value = btn.getAttribute('data-site');
+          editingId = btn.getAttribute('data-id');
+        }
+      });
+
   
-    window.editItem = function (id, serialNumber, itemName, category, status, site) {
+    /*  window.editItem = function (id, serialNumber, itemName, category, status, site) {
       document.getElementById('serialNumber').value = serialNumber;
       document.getElementById('itemName').value = itemName;
       document.getElementById('category').value = category;
       document.getElementById('status').value = status;
       document.getElementById('site').value = site;
       editingId = id;
-    };
+    };**/
   
     window.removeItem = async function (id) {
       await deleteDoc(doc(db, "inventory", id));
@@ -250,10 +286,19 @@
           <td>${item.status}</td>
           <td>${item.site}</td>
           <td>
-            <button class='edit-btn' onclick="editItem('${item.id}', '${item.serialNumber}', '${item.itemName}', '${item.category}', '${item.status}', '${item.site}')">Edit</button>
-            <button class='remove-btn' onclick="removeItem('${item.id}')">Remove</button>
+            <button type="button" class='edit-btn'
+                data-id="${item.id}"
+                data-serial="${item.serialNumber}"
+                data-name="${item.itemName}"
+                data-category="${item.category}"
+                data-status="${item.status}"
+                data-site="${item.site}">
+                Edit
+            </button>
+            <button type="button" class='remove-btn' onclick="removeItem('${item.id}')">Remove</button>
           </td>`;
-      });
+});
+
     };
   
     // Load data on first load
