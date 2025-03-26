@@ -1,91 +1,83 @@
 <!DOCTYPE html>
 <html lang="en"> 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CASW Inventory Tracker</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CASW Inventory Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script> <!-- 👈 Add PapaParse -->
 </head>
 <body>
 
-    <!-- 🔓 Logout button in top-right corner -->
-    <button id="logoutBtn" style="display: none;" class="logout-btn">Logout</button>
-    
-    
-    <img src="CASW.png" alt="C.A.S.W Logo" class="auth-logo" />
- 
+  <!-- 🔓 Logout button -->
+  <button id="logoutBtn" style="display: none;" class="logout-btn">Logout</button>
 
-    
-    <!-- 🔐 Login Form -->
-        <div id="authSection" class="auth-container">
-            <input type="email" id="email" placeholder="Email">
-            <input type="password" id="password" placeholder="Password">
-            <button id="loginBtn">Login</button>
-        </div>
-  
-        
-        
-        <!-- ✅ Inventory form: hidden until logged in -->
-       <!-- ✅ Inventory Form (Only form inputs & submit button) -->
-        <form id="inventoryForm" style="display: none;">
-          <div class="form-fields">
-            <input type="text" id="serialNumber" placeholder="Serial Number" required>
-            <input type="text" id="itemName" placeholder="Item Name" required>
-            <input type="text" id="category" placeholder="Category" required>
-            <select id="status">
-              <option value="Available">Available</option>
-              <option value="In Use">In Use</option>
-            </select>
-            <select id="site">
-              <option value="PS 18">PS 18</option>
-              <option value="Bronx River">Bronx River</option>
-              <option value="Beacon">Beacon</option>
-              <option value="Main Office">Main Office</option>
-            </select>
-            <button type="submit">Add Item</button>
-          </div>
-        </form>
+  <img src="CASW.png" alt="C.A.S.W Logo" class="auth-logo" />
 
-        <!-- ✅ Search box should also be OUTSIDE the form -->
-        <input type="text" id="searchBox" placeholder="Search..." onkeyup="searchItems()" style="display: none;">
+  <!-- 🔐 Login -->
+  <div id="authSection" class="auth-container">
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <button id="loginBtn">Login</button>
+  </div>
 
-        <!-- ✅ Inventory Table -->
-        <table style="display: none;">
-          <thead>...</thead>
-          <tbody id="inventoryList"></tbody>
-        </table>
+  <!-- ✅ Inventory Form -->
+  <form id="inventoryForm" style="display: none;">
+    <div class="form-fields">
+      <input type="text" id="serialNumber" placeholder="Serial Number" required>
+      <input type="text" id="itemName" placeholder="Item Name" required>
+      <input type="text" id="category" placeholder="Category" required>
+      <select id="status">
+        <option value="Available">Available</option>
+        <option value="In Use">In Use</option>
+      </select>
+      <select id="site">
+        <option value="PS 18">PS 18</option>
+        <option value="Bronx River">Bronx River</option>
+        <option value="Beacon">Beacon</option>
+        <option value="Main Office">Main Office</option>
+      </select>
+      <button type="submit">Add Item</button>
+    </div>
+  </form>
 
-        
-          
-    
-    
-    <table>
-        <thead>
-            <tr>
-                <th onclick="sortTable(0)">Serial Number</th>
-                <th onclick="sortTable(1)">Name</th>
-                <th onclick="sortTable(2)">Category</th>
-                <th onclick="sortTable(3)">Status</th>
-                <th onclick="sortTable(4)">Site</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="inventoryList"></tbody>
-    </table>
+  <!-- ✅ Search + Export + Import -->
+  <div class="top-bar" style="display: none; justify-content: space-between; align-items: center; margin: 10px 0;">
+    <input type="text" id="searchBox" placeholder="Search..." onkeyup="searchItems()">
+    <div id="summary" style="font-weight: bold;"></div>
+    <div>
+      <input type="file" id="importFile" accept=".csv">
+      <button id="importBtn" type="button">Import CSV</button>
+      <button id="exportBtn" type="button">Export CSV</button>
+    </div>
+  </div>
 
+  <table id="inventoryTable" style="display: none;">
+    <thead>
+      <tr>
+        <th onclick="sortTable(0)">Serial Number</th>
+        <th onclick="sortTable(1)">Name</th>
+        <th onclick="sortTable(2)">Category</th>
+        <th onclick="sortTable(3)">Status</th>
+        <th onclick="sortTable(4)">Site</th>
+        <th onclick="sortTable(5)">Last Updated</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="inventoryList"></tbody>
+  </table>
 
-    
-
-    <!-- Firebase + Firestore SDK -->
-<script type="module">
+  <!-- Firebase + Firestore -->
+  <script type="module">
     import {
-        getAuth,
-        onAuthStateChanged,
-        signInWithEmailAndPassword,
-        signOut
+      getAuth,
+      onAuthStateChanged,
+      signInWithEmailAndPassword,
+      signOut
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import {
       getFirestore,
@@ -94,8 +86,7 @@
       addDoc,
       updateDoc,
       deleteDoc,
-      doc,
-      setDoc
+      doc
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -106,67 +97,45 @@
       messagingSenderId: "614257871007",
       appId: "1:614257871007:web:860ef30566c93af173baaa"
     };
-  
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const inventoryRef = collection(db, "inventory");
-
-
     const auth = getAuth(app);
 
     onAuthStateChanged(auth, user => {
-        if (user) {
-            console.log("🔐 Authenticated as", user.email);
-            document.getElementById('authSection').style.display = 'none';
-            document.getElementById('inventoryForm').style.display = 'block';
-            document.getElementById('searchBox').style.display = 'block';
-            document.querySelector('table').style.display = 'table';
-            document.getElementById('logoutBtn').style.display = 'inline-block';
-            loadData();
-        } else {
-            console.log("👤 No user signed in.");
-            document.getElementById('authSection').style.display = 'block';
-            document.getElementById('inventoryForm').style.display = 'none';
-            document.getElementById('searchBox').style.display = 'none';
-            document.querySelector('table').style.display = 'none';
-            document.getElementById('logoutBtn').style.display = 'none';
-        }
-        });
+      if (user) {
+        document.getElementById('authSection').style.display = 'none';
+        document.getElementById('inventoryForm').style.display = 'block';
+        document.querySelector('table').style.display = 'table';
+        document.getElementById('logoutBtn').style.display = 'inline-block';
+        document.querySelector('.top-bar').style.display = 'flex';
+        loadData();
+      } else {
+        document.getElementById('authSection').style.display = 'block';
+        document.getElementById('inventoryForm').style.display = 'none';
+        document.querySelector('table').style.display = 'none';
+        document.getElementById('logoutBtn').style.display = 'none';
+        document.querySelector('.top-bar').style.display = 'none';
+      }
+    });
 
-
-
-    // 🔐 Login
     document.getElementById('loginBtn').addEventListener('click', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        alert("Login failed: " + error.message);
+      }
+    });
 
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            // No alert — just wait for onAuthStateChanged to trigger
-        } catch (error) {
-            console.error("❌ Login error:", error.message);
-            alert("Login failed: " + error.message);
-        }
-        });
-
-
-    
-
-
-    // 🚪 Logout
     document.getElementById('logoutBtn').addEventListener('click', async () => {
-        await signOut(auth);
-        // No alert — the UI will reset automatically via onAuthStateChanged
-        });
+      await signOut(auth);
+    });
 
-
-
-  
-   
-  
     let editingId = null;
-  
     document.getElementById('inventoryForm').addEventListener('submit', async function (event) {
       event.preventDefault();
       const item = {
@@ -176,107 +145,152 @@
         status: document.getElementById('status').value,
         site: document.getElementById('site').value
       };
-  
+
       if (!item.serialNumber || !item.itemName || !item.category) {
         alert("Please fill all required fields.");
         return;
       }
+
       if (editingId) {
-          const itemDoc = doc(db, "inventory", editingId);
-          await updateDoc(itemDoc, item);
-          editingId = null;
-        } else {
-          await addDoc(inventoryRef, item);
+        await updateDoc(doc(db, "inventory", editingId), {
+          ...item,
+          timestamp: serverTimestamp()
+        });
+
+        editingId = null;
+      } else {
+        const querySnapshot = await getDocs(inventoryRef);
+        const exists = querySnapshot.docs.some(docSnap =>
+          docSnap.data().serialNumber === item.serialNumber
+        );
+
+        if (exists) {
+          alert("❗An item with this serial number already exists.");
+          return;
         }
 
-        // Clear form AFTER edit/add is done
-        document.getElementById('inventoryForm').reset();
+        await addDoc(inventoryRef, {
+          ...item,
+          timestamp: serverTimestamp()
+        });
 
-        // Small delay helps prevent UI flicker when editing
-        setTimeout(() => loadData(), 100);
+      }
 
-      
+
+      document.getElementById('inventoryForm').reset();
+      setTimeout(() => loadData(), 100);
     });
-  
-    async function loadData() {
-      const querySnapshot = await getDocs(inventoryRef);
-      const table = document.getElementById('inventoryList');
-      table.innerHTML = "";
-  
-      querySnapshot.forEach((docSnap) => {
-        const item = docSnap.data();
-        const row = table.insertRow();
-        row.innerHTML = `
-          <td>${item.serialNumber}</td>
-          <td>${item.itemName}</td>
-          <td>${item.category}</td>
-          <td>${item.status}</td>
-          <td>${item.site}</td>
-          <td>
-            <button  type="button" class='edit-btn'
-                data-id="${docSnap.id}"
-                data-serial="${item.serialNumber}"
-                data-name="${item.itemName}"
-                data-category="${item.category}"
-                data-status="${item.status}"
-                data-site="${item.site}">
-                Edit
-            </button>
-            <button type="button" class='remove-btn' onclick="removeItem('${docSnap.id}')">Remove</button>
-          </td>`;
+
+    function renderSummary(items) {
+      const total = items.length;
+      const available = items.filter(item => item.status === 'Available').length;
+      const inUse = items.filter(item => item.status === 'In Use').length;
+      document.getElementById('summary').innerText = `Total Items: ${total} | Available: ${available} | In Use: ${inUse}`;
+
+      // Export CSV
+      document.getElementById('exportBtn').addEventListener('click', () => {
+        const rows = document.querySelectorAll('#inventoryList tr');
+        const csvRows = [["Serial Number", "Item Name", "Category", "Status", "Site", "Last Updated"]];
+
+        rows.forEach(row => {
+          if (row.style.display === 'none') return;
+          const cells = row.querySelectorAll('td');
+          const rowData = [];
+          for (let i = 0; i < 6; i++) {
+            rowData.push(`"${cells[i].textContent.trim()}"`);
+          }
+          csvRows.push(rowData);
+        });
+
+        const blob = new Blob([csvRows.map(row => row.join(',')).join('\n')], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'filtered_inventory.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       });
     }
 
-    document.addEventListener('click', function(e) {
-        if (e.target && e.target.classList.contains('edit-btn')) {
-          const btn = e.target;
-          document.getElementById('serialNumber').value = btn.getAttribute('data-serial');
-          document.getElementById('itemName').value = btn.getAttribute('data-name');
-          document.getElementById('category').value = btn.getAttribute('data-category');
-          document.getElementById('status').value = btn.getAttribute('data-status');
-          document.getElementById('site').value = btn.getAttribute('data-site');
-          editingId = btn.getAttribute('data-id');
-        }
-      });
+    async function loadData() {
+        document.getElementById('loader').style.display = 'block';
+        
+        const querySnapshot = await getDocs(inventoryRef);
+        const table = document.getElementById('inventoryList');
+        table.innerHTML = "";
+        const items = [];
+        querySnapshot.forEach(docSnap => {
+          items.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderSummary(items);
+        items.forEach(item => {
+          const row = table.insertRow();
+          row.innerHTML = `
+            <td>${item.serialNumber}</td>
+            <td>${item.itemName}</td>
+            <td>${item.category}</td>
+            <td>${item.status}</td>
+            <td>${item.site}</td>
+            <td>${item.timestamp?.toDate ? item.timestamp.toDate().toLocaleString() : "—"}</td>
+            <td>
+              <button class='edit-btn' data-id="${item.id}" data-serial="${item.serialNumber}" data-name="${item.itemName}" data-category="${item.category}" data-status="${item.status}" data-site="${item.site}">Edit</button>
+              <button class='remove-btn' onclick="removeItem('${item.id}')">Remove</button>
+            </td>
+            `;
+        });
 
-  
-    /*  window.editItem = function (id, serialNumber, itemName, category, status, site) {
-      document.getElementById('serialNumber').value = serialNumber;
-      document.getElementById('itemName').value = itemName;
-      document.getElementById('category').value = category;
-      document.getElementById('status').value = status;
-      document.getElementById('site').value = site;
-      editingId = id;
-    };**/
-  
+  document.getElementById('loader').style.display = 'none';
+}
+
+
+    document.addEventListener('click', function(e) {
+      if (e.target && e.target.classList.contains('edit-btn')) {
+        const btn = e.target;
+        document.getElementById('serialNumber').value = btn.getAttribute('data-serial');
+        document.getElementById('itemName').value = btn.getAttribute('data-name');
+        document.getElementById('category').value = btn.getAttribute('data-category');
+        document.getElementById('status').value = btn.getAttribute('data-status');
+        document.getElementById('site').value = btn.getAttribute('data-site');
+        editingId = btn.getAttribute('data-id');
+      }
+    });
+
     window.removeItem = async function (id) {
-      await deleteDoc(doc(db, "inventory", id));
-      loadData();
+      const confirmDelete = confirm("Are you sure you want to delete this item?");
+      if (confirmDelete) {
+        await deleteDoc(doc(db, "inventory", id));
+        loadData();
+      }
     };
-  
+
+
     window.searchItems = function () {
       const filter = document.getElementById('searchBox').value.toLowerCase();
       const rows = document.getElementById('inventoryList').getElementsByTagName('tr');
-  
       for (let row of rows) {
         row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
       }
     };
-  
-    // Optional: implement basic sort (by getting fresh snapshot, sorting, and re-rendering)
+
     window.sortTable = async function (columnIndex) {
       const querySnapshot = await getDocs(inventoryRef);
       const items = [];
       querySnapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-  
-      const keys = ["serialNumber", "itemName", "category", "status", "site"];
-      const sortKey = keys[columnIndex];
-  
-      items.sort((a, b) => a[sortKey].localeCompare(b[sortKey]));
-  
+      const keys = ["serialNumber", "itemName", "category", "status", "site", "timestamp"];
+      items.sort((a, b) => {
+        const key = keys[columnIndex];
+        if (key === "timestamp") {
+          const aTime = a.timestamp?.toDate?.() ?? new Date(0);
+          const bTime = b.timestamp?.toDate?.() ?? new Date(0);
+          return bTime - aTime; // Descending: newest first
+        } else {
+          return (a[key] || "").localeCompare(b[key] || "");
+        }
+      });
+
       const table = document.getElementById('inventoryList');
       table.innerHTML = "";
-  
       items.forEach(item => {
         const row = table.insertRow();
         row.innerHTML = `
@@ -285,26 +299,67 @@
           <td>${item.category}</td>
           <td>${item.status}</td>
           <td>${item.site}</td>
+          <td>${item.timestamp?.toDate ? item.timestamp.toDate().toLocaleString() : "—"}</td>
           <td>
-            <button type="button" class='edit-btn'
-                data-id="${item.id}"
-                data-serial="${item.serialNumber}"
-                data-name="${item.itemName}"
-                data-category="${item.category}"
-                data-status="${item.status}"
-                data-site="${item.site}">
-                Edit
-            </button>
-            <button type="button" class='remove-btn' onclick="removeItem('${item.id}')">Remove</button>
-          </td>`;
-});
-
+            <button class='edit-btn' data-id="${item.id}" data-serial="${item.serialNumber}" data-name="${item.itemName}" data-category="${item.category}" data-status="${item.status}" data-site="${item.site}">Edit</button>
+            <button class='remove-btn' onclick="removeItem('${item.id}')">Remove</button>
+          </td>
+          `;
+      });
     };
-  
-    // Load data on first load
-    loadData();
+
+    // ✅ IMPORT CSV using PapaParse
+    document.getElementById('importBtn').addEventListener('click', () => {
+      const fileInput = document.getElementById('importFile');
+      const file = fileInput.files[0];
+      if (!file) {
+        alert("Please select a CSV file first.");
+        return;
+      }
+
+      document.getElementById('loader').style.display = 'block';
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async function(results) {
+          const data = results.data;
+          let addedCount = 0;
+          let skippedCount = 0;
+
+          for (let i = 0; i < data.length; i += 20) {
+            const chunk = data.slice(i, i + 20);
+            await Promise.all(
+              chunk.map(async (row) => {
+                const item = {
+                  serialNumber: row["Serial Number"]?.trim() || "",
+                  itemName: row["Item Name"]?.trim() || "",
+                  category: row["Category"]?.trim() || "",
+                  status: row["Status"]?.trim() || "Available",
+                  site: row["Site"]?.trim() || "Main Office"
+                };
+                if (item.serialNumber && item.itemName && item.category) {
+                  await addDoc(inventoryRef, item);
+                  addedCount++;
+                } else {
+                  skippedCount++;
+                  console.warn("⛔ Skipping invalid row:", row);
+                }
+              })
+            );
+          }
+
+          alert(`✅ Import complete!\nAdded: ${addedCount}\nSkipped: ${skippedCount}`);
+          document.getElementById('loader').style.display = 'none';
+          loadData();
+        }
+      });
+    });
+
+
+    loadData(); // Initial load
   </script>
-  
+<div id="loader" class="loader" style="display: none;"></div>
+
 </body>
 </html>
-
