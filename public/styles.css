@@ -155,7 +155,86 @@ button:hover {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+
   
   
   
   
+  /* 📱 Responsive Adjustments for Mobile */
+@media screen and (max-width: 768px) {
+  body {
+    padding: 10px;
+    background-position: center top;
+  }
+
+  .auth-container {
+    width: 90%;
+    padding: 20px;
+  }
+
+  .auth-logo {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .top-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .top-bar input,
+  .top-bar button,
+  .top-bar input[type="file"] {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  #summary {
+    margin: 10px 0;
+    width: 100%;
+  }
+
+  #inventoryForm .form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  #inventoryForm input,
+  #inventoryForm select,
+  #inventoryForm button {
+    width: 100%;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+
+  table,
+  th,
+  td {
+    font-size: 12px;
+    padding: 6px;
+  }
+
+  .logout-btn {
+    top: 10px;
+    right: 10px;
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  td button {
+    margin: 2px 0;
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  td img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+
