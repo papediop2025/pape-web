@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>CASW Inventory Tracker</title>
 <link rel="stylesheet" href="styles.css">
 <link rel="icon" href="favicon.ico" type="image/x-icon">
@@ -139,6 +139,85 @@
 .top-nav button:hover {
   background-color: #125ea9;
 }
+@media (max-width: 768px) {
+  .top-nav {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .nav-left,
+  .nav-center,
+  .nav-right {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .top-nav button,
+  #searchBox,
+  #siteFilter {
+    width: 100%;
+    font-size: 16px;
+    padding: 10px;
+  }
+
+  .form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .form-fields input,
+  .form-fields select,
+  .form-fields button {
+    width: 100%;
+    font-size: 16px;
+  }
+
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  table thead {
+    display: none;
+  }
+
+  table tr {
+    display: block;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px;
+  }
+
+  table td {
+    display: block;
+    text-align: left;
+    padding: 5px 0;
+    word-wrap: break-word;
+  }
+
+  table td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    display: inline-block;
+    width: 120px;
+  }
+
+  .modal-content {
+    max-width: 95vw;
+    max-height: 90vh;
+    padding: 15px;
+  }
+
+  .logo {
+    height: 30px;
+  }
+}
+
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -611,18 +690,19 @@ let chart; // Global variable to hold the chart instance
      filteredItems.forEach(item => {
        const row = table.insertRow();
        row.innerHTML = `
-         <td>${item.serialNumber}</td>
-         <td>${item.itemName}</td>
-         <td>${item.category}</td>
-         <td>${item.status}</td>
-         <td>${item.site}</td>
-         <td>${item.timestamp?.toDate ? item.timestamp.toDate().toLocaleString() : "—"}</td>
-         <td>${item.photoURL ? `<img src="${item.photoURL}" style="max-height: 40px; border-radius: 4px; cursor: pointer;">` : "—"}</td>
-         <td>
-           <button class='edit-btn' data-id="${item.id}" data-serial="${item.serialNumber}" data-name="${item.itemName}" data-category="${item.category}" data-status="${item.status}" data-site="${item.site}">Edit</button>
-           <button class='remove-btn' onclick="removeItem('${item.id}')">Remove</button>
-         </td>
-       `;
+        <td data-label="Serial Number">${item.serialNumber}</td>
+        <td data-label="Name">${item.itemName}</td>
+        <td data-label="Category">${item.category}</td>
+        <td data-label="Status">${item.status}</td>
+        <td data-label="Site">${item.site}</td>
+        <td data-label="Last Updated">${item.timestamp?.toDate ? item.timestamp.toDate().toLocaleString() : "—"}</td>
+        <td data-label="Photo">${item.photoURL ? `<img src="${item.photoURL}" style="max-height: 40px; border-radius: 4px; cursor: pointer;">` : "—"}</td>
+        <td data-label="Action">
+          <button class='edit-btn' data-id="${item.id}" data-serial="${item.serialNumber}" data-name="${item.itemName}" data-category="${item.category}" data-status="${item.status}" data-site="${item.site}">Edit</button>
+          <button class='remove-btn' onclick="removeItem('${item.id}')">Remove</button>
+        </td>
+      `;
+
 
        
 
@@ -742,18 +822,19 @@ window.sortTable = async function (columnIndex) {
   items.forEach(item => {
     const row = table.insertRow();
     row.innerHTML = `
-      <td>${item.serialNumber}</td>
-      <td>${item.itemName}</td>
-      <td>${item.category}</td>
-      <td>${item.status}</td>
-      <td>${item.site}</td>
-      <td>${item.timestamp?.toDate ? item.timestamp.toDate().toLocaleString() : "—"}</td>
-      <td>${item.photoURL ? `<img src="${item.photoURL}" style="max-height: 40px; border-radius: 4px; cursor: pointer;">` : "—"}</td>
-      <td>
+      <td data-label="Serial Number">${item.serialNumber}</td>
+      <td data-label="Name">${item.itemName}</td>
+      <td data-label="Category">${item.category}</td>
+      <td data-label="Status">${item.status}</td>
+      <td data-label="Site">${item.site}</td>
+      <td data-label="Last Updated">${item.timestamp?.toDate ? item.timestamp.toDate().toLocaleString() : "—"}</td>
+      <td data-label="Photo">${item.photoURL ? `<img src="${item.photoURL}" style="max-height: 40px; border-radius: 4px; cursor: pointer;">` : "—"}</td>
+      <td data-label="Action">
         <button class='edit-btn' data-id="${item.id}" data-serial="${item.serialNumber}" data-name="${item.itemName}" data-category="${item.category}" data-status="${item.status}" data-site="${item.site}">Edit</button>
         <button class='remove-btn' onclick="removeItem('${item.id}')">Remove</button>
       </td>
     `;
+
     
 
 
